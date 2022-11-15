@@ -24,27 +24,41 @@ class gol_main:
                     newfield[y][x] = 1
                 else:
                     newfield[y][x] = 0
-        if newfield == self.field:
-            return -1
+        if self.field == newfield:
+            self.steady_state = 1
         self.field = newfield
+        return newfield
 
-    def printfield(self):
-        self.axes.clear()
+    def printfield(self, fieldmap):
+        self.axis.clear()
+        self.axis = plt.axes(xlim =(0,self.screensize),
+                ylim =(0,self.screensize))
+        plt.grid()
+        self.axis.get_xaxis().set_ticks([])
+        self.axis.get_yaxis().set_ticks([])
+        self.axis.grid(True)
         block = self.screensize/self.maxx
         for x in range (self.maxx):
             for y in range (self.maxx):
-                self.axes.add_patch(Rectangle((x,y),block,block))
-        plt.show()
+                if fieldmap[y][x] == 1:
+                    self.axis.add_patch(Rectangle((x,y),block,block))
     
-    def run_game(self, rounds):
-        self.printfield()
-        for i in range(rounds):
-            if self.update_state() == -1:
-                return -1
-            self.printfield()
+    def frames(self):
+        yield self.field
+        for i in range(self.rounds):
+            yield self.update_state()
+
+    def run_game(self, maxrounds):
+        self.rounds = maxrounds
+        anim = FuncAnimation(self.fig, self.printfield, frames=self.frames, interval=500)
+        plt.show()
+        #anim.save("Keek.gif")
+        if self.steady_state == 1:
+            return -1
         return 1
 
-    def __init__(self, size, initstate, screensize=1000):
+    
+    def __init__(self, size, initstate):
         self.field = [[0] * size for i in range(0,size)]
         self.maxx = size
         self.testvar = 1
@@ -52,28 +66,11 @@ class gol_main:
             if x >= size or y >= size or x < 0 or y < 0:
                 raise Exception("Solun indeksit yli pelialueen rajojen!")
             self.field[y][x] = 1
-        self.screensize = screensize
+        self.screensize = size
+        self.steady_state = 0
 
         #kuvien alustaminen
         self.fig = plt.figure()
-        self.axis = plt.axes(xlim =(0, 0,self.screensize),
-                ylim =(0, 0,self.screensize))
-
-
-def frames():
-    while True:
-        yield Regr_magic()
-
-
-fig = plt.figure()
-
-x = []
-y = []
-def animate(args):
-    x.append(args[0])
-    y.append(args[1])
-    return plt.plot(x, y, color='g')
-
-
-anim = animation.FuncAnimation(fig, animate, frames=frames, interval=1000)
-plt.show()
+        self.axis = plt.axes()
+        #self.axis.get_xaxis().set_ticks([])
+        #self.axis.get_yaxis().set_ticks([])
