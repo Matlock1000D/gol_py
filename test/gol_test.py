@@ -28,6 +28,9 @@ class Tests(unittest.TestCase):
     def test_running_glider(self):
         size = 100
         testgol = gol.GolMain(size, [(50,51),(50,50),(50,49),(49,49),(48,50)])
+        self.assertEqual(testgol.run_game(10),1)
+    def test_running_glider_gun(self):
+        testgol = gol.GolMain(-1, 'testi.txt', 'file')
         self.assertEqual(testgol.run_game(100),1)
 
 if __name__ == '__main__':

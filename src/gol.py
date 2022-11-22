@@ -52,37 +52,60 @@ class GolMain:
     
     def frames(self):
         """Apufunktio animaation piirtoon... Mutta hoitaa tosiasiassa myös varsinaisen pelin pyörittämisen!"""
-        self.steady_state = 1
-        yield self.field
-        for i in range(self.rounds):
-            print(i)
+        while self.generation < self.rounds:
+            self.generation += 1
             yield self.update_state()
             if self.steady_state == 1:
                 break
 
     def run_game(self, maxrounds):
+        """Pelin pääsilmukka"""
         self.rounds = maxrounds
-        anim = FuncAnimation(self.fig, self.printfield, frames=self.frames, interval=500)
+        anim = FuncAnimation(self.fig, self.printfield, frames=self.frames, interval=100)
         plt.show()
+        anim.save('gol_anim.gif')
         if self.steady_state == 1:
             return -1
         return 1
+    
+    def read_data(self, initstate):
+        """Luetaan data tiedostosta"""
+        with open(initstate) as stagefile:
+            data = stagefile.read()
+        data_rows = data.split()
+        if len(data_rows) != len(data_rows[0]):
+            raise Exception("Pelialue ei ole neliömäinen!")
+        if not all(cell == '0' or cell == '1' for cell in (cell for row in data_rows for cell in row)):
+            raise Exception("Kiellettyjä merkkejä kenttätiedostossa")
+        self.maxx = len(data_rows)
+        self.field = [[0] * self.maxx for i in range(0,self.maxx)]
+        for y, row in enumerate(data_rows):
+            for x, cell in enumerate(row):
+                self.field[y][x] = int(cell)
+        self.field.reverse()    #y-akseli oikein päin
    
-    def __init__(self, size, initstate):
-        self.rounds = -1
-        self.field = [[0] * size for i in range(0,size)]
-        self.maxx = size
+    def init_field(self, size, initstate, init_method='array'):
+        """Kentän alkutilanteen asetus"""
+        if init_method == 'array':
+            self.field = [[0] * size for i in range(0,size)]    #pelikentän alustus kuolleiksi soluiksi
+            for x,y in initstate:
+                if x >= size or y >= size or x < 0 or y < 0:
+                    raise Exception("Solun indeksit yli pelialueen rajojen!")
+                self.field[y][x] = 1
+        elif init_method == 'file':
+            self.read_data(initstate)
+        else:
+            raise Exception("Tällaista alustusmetodia emme tue!")
+
+    def __init__(self, size, initstate, init_method='array'):
+        self.rounds = -1    #kierrosmäärä
+        self.maxx = size    #pelikentän sivun koko soluina. Tällä hetkellä tukee vain neliön muotoisia kenttiä.
         self.testvar = 1
-        for x,y in initstate:
-            if x >= size or y >= size or x < 0 or y < 0:
-                raise Exception("Solun indeksit yli pelialueen rajojen!")
-            self.field[y][x] = 1
-        self.screensize = size
+        self.generation = 0
+        self.init_field(size, initstate, init_method)
+        self.screensize = self.maxx
         self.steady_state = 0
 
         #kuvien alustaminen
         self.fig = plt.figure(frameon=False)
         self.axis = plt.axes(frame_on=False)
-        #self.axis.get_xaxis().set_ticks([])
-        #self.axis.get_yaxis().set_ticks([])
-        
