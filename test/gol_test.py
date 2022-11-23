@@ -32,6 +32,9 @@ class Tests(unittest.TestCase):
     def test_running_glider_gun(self):
         testgol = gol.GolMain(-1, 'testi.txt', 'file')
         self.assertEqual(testgol.run_game(100),1)
+    def test_pygame(self):
+        testgol = gol.GolMain(-1, 'testi.txt', 'file', renderer='pygame')
+        self.assertEqual(testgol.run_game(-1),1)
 
 if __name__ == '__main__':
     unittest.main()

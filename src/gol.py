@@ -3,6 +3,7 @@
 from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
 from matplotlib.animation import FuncAnimation
+import pygame
 
 class GolMain:
     """Game of Life -peliä kuvaava luokka"""
@@ -61,11 +62,47 @@ class GolMain:
     def run_game(self, maxrounds):
         """Pelin pääsilmukka"""
         self.rounds = maxrounds
-        anim = FuncAnimation(self.fig, self.printfield, frames=self.frames, interval=100)
-        plt.show()
-        anim.save('gol_anim.gif')
-        if self.steady_state == 1:
-            return -1
+        disp_x = 1920   #ikkunan x-resoluutio
+        disp_y = 1080   #ikkunan y-resoluutio
+        block_x = disp_x/self.maxx  #tiilen koko x-suunnassa
+        block_y = disp_y/self.maxx  #tiilen koko y-suunnassa
+        block_color = (0,200,0) #tiilen väri
+        if self.renderer == 'pygame':
+            clock = pygame.time.Clock()
+            screen = pygame.display.set_mode((disp_x,disp_y))   #arvataan HD-näyttö
+            running = True
+            while running:
+                # katsotaan, onko prosessointi yritetty lopettaa
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT or event.type == pygame.KEYDOWN:
+                        running = False
+                # piirretään
+                ## haetaan elävät solut
+                live_cells = []
+                for y, row in enumerate(self.field):
+                    if 1 in row:
+                        for x, value in enumerate(row):
+                            if value == 1:
+                                live_cells.append((x,y))
+                screen.fill("white")
+                rects = []
+                for x,y in live_cells:
+                    rects.append(pygame.Rect(x*block_x,disp_y-(y*block_y),block_x,block_y))
+                for rect in rects:
+                    pygame.draw.rect(screen, block_color, rect)
+                pygame.display.flip()   #päivitetään ruutu
+
+                # päivitetään pelitila
+                self.update_state()
+
+                clock.tick(self.fps)    #odotetaan seuraavaan frameen
+            return 1
+        else:
+            anim = FuncAnimation(self.fig, self.printfield, frames=self.frames, interval=100)
+            plt.show()
+            anim.save('gol_anim.gif')
+            if self.steady_state == 1:
+                return -1
         return 1
     
     def read_data(self, initstate):
@@ -97,14 +134,18 @@ class GolMain:
         else:
             raise Exception("Tällaista alustusmetodia emme tue!")
 
-    def __init__(self, size, initstate, init_method='array'):
+    def __init__(self, size, initstate, init_method='array', renderer='matplotlib'):
+        if renderer == 'pygame':
+            pygame.init()
         self.rounds = -1    #kierrosmäärä
         self.maxx = size    #pelikentän sivun koko soluina. Tällä hetkellä tukee vain neliön muotoisia kenttiä.
         self.testvar = 1
         self.generation = 0
+        self.fps = 30       #fps pygame-animaatiolle
         self.init_field(size, initstate, init_method)
         self.screensize = self.maxx
         self.steady_state = 0
+        self.renderer = renderer
 
         #kuvien alustaminen
         self.fig = plt.figure(frameon=False)
